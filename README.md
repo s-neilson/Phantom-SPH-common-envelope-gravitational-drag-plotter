@@ -6,3 +6,5 @@ It allows the user to choose what column pairs of data they want to plot on a ma
 
 It can also plot files containing data arranged in columns separated by a space followed possibly by whitespace and rows separated by new lines. The first line in the file must contain the names of the columns and the column number (starting from 1, not 0) inside "[]" type brackets in the following format: [ number   name] [number  name]  [    number  name]. The text inside the brackets needs to be 15 characters long, spaces inside the brackets can be used multiple times after one another, number must be written using numerals, the brackets must be seperated by at least one space followed possibly by whitespace and the number of column names with column numbers inside brackets must be equal to or less than the total number of columns of data. Data in the file also must be able to be conveted to a float using the float() function in Python.
 
+
+This program has been tested using Python 3.7.4
