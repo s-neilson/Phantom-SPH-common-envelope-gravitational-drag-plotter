@@ -126,8 +126,10 @@ def createUnitDictionary():
     torqueNm=(13,("torque (Nm)",(M_kg*D_m*D_m)/(T_s*T_s)))
     densityG_cm3=(14,("density (g/cm^3)",M_g/(D_cm*D_cm*D_cm)))
     densityKg_m3=(15,("density (kg/m^3)",M_kg/(D_m*D_m*D_m)))
+    energyErg=(16,("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s)))
+    energyJ=(17,("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s)))
     
-    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3])
+    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3,energyErg,energyJ])
     return unitDictionary
 
 
@@ -153,6 +155,10 @@ def plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,multipleFiles):
         print("There is nothing to plot")
         return
     
+    plotFigure=plt.figure()
+    plotAxes=plotFigure.gca()
+    
+    
     #The unit conversion factors from phantom units.
     xScaleFactor=xUnits[1]
     yScaleFactor=yUnits[1]
@@ -160,8 +166,10 @@ def plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,multipleFiles):
     #The axes names as determined by the chosen units.
     xAxisName=xUnits[0]
     yAxisName=yUnits[0]
-    plt.xlabel(xAxisName)
-    plt.ylabel(yAxisName)
+    plotAxes.set_xlabel(xAxisName)
+    plotAxes.set_ylabel(yAxisName)
+    
+    plotAxes.ticklabel_format(style="sci",scilimits=(0,0))
     
     
     for currentColumnPair in columnPairsToPlot:
@@ -181,9 +189,9 @@ def plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,multipleFiles):
             currentPlotLabel+=" - "
             currentPlotLabel+=columnData[currentYColumnKey]["fileName"]
             
-        plt.plot(xDataScaled,yDataScaled,label=currentPlotLabel)
+        plotAxes.plot(xDataScaled,yDataScaled,label=currentPlotLabel)
      
-    plt.legend()  
+    plotAxes.legend()
     plt.show()
 
 
