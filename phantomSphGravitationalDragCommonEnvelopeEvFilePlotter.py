@@ -69,14 +69,14 @@ def processAllowedUserInputs(allowedInputs):
 
         
 def getColumnPairsToPlot(fileNames,columnData):
-    columnPairsToPlot=[] #Holds a list of tuples containing the keys of the x and y column pairs to be plotted.
+    curvesToPlot=[] #Holds a list of tuples containing the keys of the x and y column pairs to be plotted along with the desired legend name.
     
     allowedColumnIndices=[i for i in columnData.keys()]
     allowedColumnIndices.append("f") #The entry for choosing to stop selecting column pairs.
     
     previousFileName=""
     while(True):
-        print("Select the x and y indices corresponding to what you want to plot. Enter f if you are finished with selecting columns to plot.")
+        print("Select the x index, y index and desired legend name corresponding to what you want to plot. Enter f if you are finished with selecting columns to plot.")
     
         for currentKey,currentColumnData in columnData.items(): #Loops through all columns.
             currentFileName=currentColumnData["fileName"]
@@ -90,13 +90,17 @@ def getColumnPairsToPlot(fileNames,columnData):
         
         xIndexSelection=processAllowedUserInputs(allowedColumnIndices) 
         if(xIndexSelection=="f"):
-            return columnPairsToPlot
+            return curvesToPlot
         
         yIndexSelection=processAllowedUserInputs(allowedColumnIndices)
         if(yIndexSelection=="f"):
-            return columnPairsToPlot
+            return curvesToPlot
+        
+        desiredLegendName=input()
+        if(desiredLegendName=="f"):
+            return curvesToPlot
                             
-        columnPairsToPlot.append((xIndexSelection,yIndexSelection))
+        curvesToPlot.append((xIndexSelection,yIndexSelection,desiredLegendName))
 
 
 #Creates a dictionary to hold information about the units used. A number key is associated with a tuple containing the
@@ -115,21 +119,23 @@ def createUnitDictionary():
     distanceCm=(2,("distance (cm)",D_cm))
     distanceM=(3,("distance (m)",D_m))
     distanceSr=(4,("distance (solar radii)",D_sr))
-    velocityCm_s=(5,("velocity (cm/s)",D_cm/T_s))
-    velocityM_s=(6,("velocity (m/s)",D_m/T_s))
-    velocityKm_s=(7,("velocity (km/s)",(D_m/1000.0)/T_s))
-    forceDyn=(8,("force (dyn)",(M_g*D_cm)/(T_s*T_s)))
-    forceN=(9,("force (N)",(M_kg*D_m)/(T_s*T_s)))
-    angularmomentumGcm2_s=(10,("angular momentum (g cm^2/s)",(M_g*D_cm*D_cm)/T_s))
-    angularmomentumKgM2_s=(11,("angular momentum (kg m^2/s)",(M_kg*D_m*D_m)/T_s))
-    torqueDynCm=(12,("torque (dyn cm)",(M_g*D_cm*D_cm)/(T_s*T_s)))
-    torqueNm=(13,("torque (Nm)",(M_kg*D_m*D_m)/(T_s*T_s)))
-    densityG_cm3=(14,("density (g/cm^3)",M_g/(D_cm*D_cm*D_cm)))
-    densityKg_m3=(15,("density (kg/m^3)",M_kg/(D_m*D_m*D_m)))
-    energyErg=(16,("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s)))
-    energyJ=(17,("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s)))
+    massG=(5,("mass (g)",M_g))
+    massKg=(6,("mass (kg)",M_kg))
+    velocityCm_s=(7,("velocity (cm/s)",D_cm/T_s))
+    velocityM_s=(8,("velocity (m/s)",D_m/T_s))
+    velocityKm_s=(9,("velocity (km/s)",(D_m/1000.0)/T_s))
+    forceDyn=(10,("force (dyn)",(M_g*D_cm)/(T_s*T_s)))
+    forceN=(11,("force (N)",(M_kg*D_m)/(T_s*T_s)))
+    angularmomentumGcm2_s=(12,("angular momentum (g cm^2/s)",(M_g*D_cm*D_cm)/T_s))
+    angularmomentumKgM2_s=(13,("angular momentum (kg m^2/s)",(M_kg*D_m*D_m)/T_s))
+    torqueDynCm=(14,("torque (dyn cm)",(M_g*D_cm*D_cm)/(T_s*T_s)))
+    torqueNm=(15,("torque (Nm)",(M_kg*D_m*D_m)/(T_s*T_s)))
+    densityG_cm3=(16,("density (g/cm^3)",M_g/(D_cm*D_cm*D_cm)))
+    densityKg_m3=(17,("density (kg/m^3)",M_kg/(D_m*D_m*D_m)))
+    energyErg=(18,("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s)))
+    energyJ=(19,("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s)))
     
-    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3,energyErg,energyJ])
+    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,massG,massKg,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3,energyErg,energyJ])
     return unitDictionary
 
 
@@ -150,8 +156,8 @@ def getPlotUnits(unitDictionary):
         
 
 #Plots all of the user selected x and y plots on top of one another.
-def plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,multipleFiles):
-    if(len(columnPairsToPlot)==0):
+def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,multipleFiles):
+    if(len(curvesToPlot)==0):
         print("There is nothing to plot")
         return
     
@@ -172,9 +178,10 @@ def plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,multipleFiles):
     plotAxes.ticklabel_format(style="sci",scilimits=(0,0))
     
     
-    for currentColumnPair in columnPairsToPlot:
-        currentXColumnKey=currentColumnPair[0]
-        currentYColumnKey=currentColumnPair[1]
+    for currentCurveToPlot in curvesToPlot:
+        currentXColumnKey=currentCurveToPlot[0]
+        currentYColumnKey=currentCurveToPlot[1]
+        currentLegendName=currentCurveToPlot[2]
         
         xData=columnData[currentXColumnKey]["values"]
         yData=columnData[currentYColumnKey]["values"]
@@ -183,15 +190,13 @@ def plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,multipleFiles):
         #it would cause problems with shared columns between plots.
         xDataScaled=[i*xScaleFactor for i in xData]
         yDataScaled=[i*yScaleFactor for i in yData]
-        
-        currentPlotLabel=columnData[currentYColumnKey]["columnName"]
-        if(multipleFiles): #If multiple files are being used, the label contains what file the column came from.
-            currentPlotLabel+=" - "
-            currentPlotLabel+=columnData[currentYColumnKey]["fileName"]
             
-        plotAxes.plot(xDataScaled,yDataScaled,label=currentPlotLabel)
+        plotAxes.plot(xDataScaled,yDataScaled,label=currentLegendName)
      
-    plotAxes.legend()
+    legend=plotAxes.legend(loc=(1.025,0))
+    legend.set_in_layout(True) #This along with the next line is needed to prevent a wide enough legend from being cut off by the figure's edge.
+    plotFigure.tight_layout()
+    
     plt.show()
 
 
@@ -206,9 +211,9 @@ def main():
         unitDictionary=createUnitDictionary()
 
         while(True):
-            columnPairsToPlot=getColumnPairsToPlot(fileNames,columnData)
+            curvesToPlot=getColumnPairsToPlot(fileNames,columnData)
             xUnits,yUnits=getPlotUnits(unitDictionary)
-            plotColumnPairs(columnData,columnPairsToPlot,xUnits,yUnits,len(fileNames)>1)
+            plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,len(fileNames)>1)
     
             print("Do you want to create another plot with the file/s? Enter yes or no.")
             if(processAllowedUserInputs(["yes","no"])=="no"):
