@@ -3,6 +3,155 @@ import csv
 import re
 import matplotlib.pyplot as plt
 
+
+
+def rpnTokenIsOperator(token):
+    return (token in ["+","-","*","/","^"])
+
+
+def rpnTokenIsNumber(token):
+    tokenNumber=0.0
+    
+    try:
+        tokenNumber=float(token)
+    except ValueError: #Casting the token to a number has failed.
+        return False
+    
+    tokenNumber+=1.0 #To prevent a variable not being used error.
+    return True
+
+
+def rpnTokenIsVariable(token):
+    return (not rpnTokenIsOperator(token)) and (not rpnTokenIsNumber(token))
+
+
+#Turns an RPN expression into a list of tokens.
+def rpnTurnIntoList(expressionString):
+    outputList=[] #A list of the tokens in the expression.
+    currentToken="" #Holds the current token that is being constructed.
+    
+    for i,currentCharacter in enumerate(expressionString):
+        if(currentCharacter==" "): #The current token has ended, meaning that it is added to the output list.
+            outputList.append(currentToken)
+            currentToken="" #The current token is reset.
+        else:
+            currentToken+=currentCharacter #The current token is continued to be constructed.
+            
+        if((i+1)==len(expressionString)): #If the final character in the string has been reached.
+            outputList.append(currentToken)
+            
+    return outputList
+
+
+#Gets the variables to the filled in in an RPN expression.
+def rpnGetVariables(expressionList,allowedVariableList):
+    variableList=[] #An array of tuples that hold variable names and indices.
+    
+    for i,currentToken in enumerate(expressionList):
+        if(rpnTokenIsVariable(currentToken)):           
+            if((currentToken in allowedVariableList)==False):
+                return [] #An empty list is returned if the variable name is not allowed.
+            
+            currentVariable=(currentToken,i)
+            variableList.append(currentVariable)
+            
+    return variableList
+
+
+#Checks if an RPN expression is valid.
+def rpnCheckValidExpression(expressionList):
+    rpnStackSize=0 #Only the stack size is needed, not the stack itself.
+    
+    for currentToken in expressionList:
+        if(rpnTokenIsOperator(currentToken)): #If the current token is an operator
+            rpnStackSize-=1 #Due to an operator removing two numbers from the stack and adding a result back into it.
+        else: #The current token is a number that needs to be added to the stack.
+            rpnStackSize+=1
+            
+        if(rpnStackSize<1):
+            return False #An invalid expression has resulted in too many items being removed from the stack.
+        
+    return rpnStackSize==1 #The expression is valid if only one element (the result) is left in the stack.
+
+
+def getValidRpnExpression(allowedVariableList):
+    print("Type a valid reverse polish notation expression. Tokens must be separated by spaces. Data columns are referenced by using their key as a token. Allowed operators are +,-,*,/ and ^.")
+    
+    while(True):
+        expressionString=input()
+        expressionList=rpnTurnIntoList(expressionString)
+        expressionVariables=rpnGetVariables(expressionList,allowedVariableList)
+        
+        if(len(expressionVariables)==0):
+            print("That RPN expression is invalid either due to non recognised variable names or no variables.")
+            continue
+                
+        if(rpnCheckValidExpression(expressionList)):
+            return (expressionList,expressionVariables)
+        else:
+            print("That RPN expression is syntacically invalid.")
+ 
+
+#Parses an RPN expression (in list form) and returns the result
+def rpnParse(expressionList):
+    rpnStack=[]
+    
+    for currentToken in expressionList:
+        if(rpnTokenIsNumber(currentToken)):
+            rpnStack.append(float(currentToken))
+        elif(rpnTokenIsOperator(currentToken)):
+            #The last two number on the stack are removed.
+            rightNumber=rpnStack.pop()
+            leftNumber=rpnStack.pop()
+            
+            currentResult=0.0 #Holds the result of the operation of the two removed numbers.
+            if(currentToken=="+"):
+                currentResult=leftNumber+rightNumber
+            elif(currentToken=="-"):
+                currentResult=leftNumber-rightNumber
+            elif(currentToken=="*"):
+                currentResult=leftNumber*rightNumber
+            elif(currentToken=="/"):
+                currentResult=leftNumber/rightNumber
+            elif(currentToken=="^"):
+                currentResult=leftNumber**rightNumber
+            else:
+                currentResult=0.0
+                
+            rpnStack.append(currentResult)
+            
+
+    return rpnStack[0] #The size of the stack at the end will be one element and this element is the answer to the expression.
+
+
+#Creates a list of datapoints to be computed from an RPN expression containing references to columns.
+def getDataForRpnExpression(columnData,expressionList,expressionVariables):
+    expressionResult=[] #A list to hold all the computed datapoints.
+    
+    currentRow=0
+    commonDatapointsExist=True
+    while(commonDatapointsExist): #This loop goes through all rows common to the variables columns in the expression.
+        
+        #This loop replaces the variables in expressionList with values from the correct columns.
+        for currentVariable in expressionVariables:
+            currentVariableKey=currentVariable[0]
+            currentColumnData=columnData[currentVariableKey]["values"]
+                        
+            currentDatapoint=currentColumnData[currentRow]
+            currentVariableIndex=currentVariable[1] #The index of the element in expressionList to be replaced by the data corresponding to currentDatapoint
+            expressionList[currentVariableIndex]=str(currentDatapoint) #The RPN parser expects all tokens to be strings.
+            
+            if((currentRow+1)==len(currentColumnData)):
+                commonDatapointsExist=False #There is no further data in at least one of the columns, so further iterations of the while loop are stopped.
+                
+        currentComputedDatapoint=rpnParse(expressionList)
+        expressionResult.append(currentComputedDatapoint) #The datapoint computed from the expression is added to the result list.
+        currentRow+=1
+        
+    return expressionResult
+        
+                
+
 #Allows the user to select what files they want to open.
 def openFiles():
     openedFiles=[]
@@ -47,8 +196,8 @@ def getColumnData(fileNames,openedFiles):
             
             columnKey=columnNumber.group(2)
             columnDataIndex=int(columnKey)-1 #This number is shifted down by 1 because the column data list starts indices at zero while the numbers in the column titles start at 1.
-            columnKeySuffix="" if(len(openedFiles)==1) else chr(ord("a")+i) #If there is more than 1 file, the key associated with the column information has a letter after the
-            columnKey+=columnKeySuffix #number that changes depending on what file the column belongs to. The letters start with a and advance through the Unicode characters.
+            columnKeySuffix=chr(ord("a")+i) #The key associated with the column information has a letter after the number that changes depending
+            columnKey+=columnKeySuffix #on what file the column belongs to. The letters start with a and advance through the Unicode characters.
             
             currentColumnData={"fileName":currentFileName,"columnName":columnName.group(2),"values":currentFileDataFloat[columnDataIndex]}           
             columnData[columnKey]=currentColumnData #The key is associated with information about the column.
@@ -71,14 +220,16 @@ def processAllowedUserInputs(allowedInputs):
 def getColumnPairsToPlot(fileNames,columnData):
     curvesToPlot=[] #Holds a list of tuples containing the keys of the x and y column pairs to be plotted along with the desired legend name.
     
-    allowedColumnIndices=[i for i in columnData.keys()]
-    allowedColumnIndices.append("f") #The entry for choosing to stop selecting column pairs.
+    allowedColumnIndices=[i for i in columnData.keys()]    
+    allowedSelections=[]
+    allowedSelections.extend(allowedColumnIndices)
+    allowedSelections.append("f") #The entry for choosing to stop selecting column pairs.
+    allowedSelections.append("e") #The entry for RPN expression input.
     
-    previousFileName=""
-    while(True):
-        print("Select the x index, y index and desired legend name corresponding to what you want to plot. Enter f if you are finished with selecting columns to plot.")
     
-        for currentKey,currentColumnData in columnData.items(): #Loops through all columns.
+    print("List of columns that can be plotted:")
+    previousFileName=""    
+    for currentKey,currentColumnData in columnData.items(): #Loops through all columns.
             currentFileName=currentColumnData["fileName"]
             currentColumnName=currentColumnData["columnName"]
             
@@ -87,18 +238,34 @@ def getColumnPairsToPlot(fileNames,columnData):
                 previousFileName=currentFileName
                 
             print("  "+currentKey+", "+currentColumnName)
+    
+    
+    while(True):
+        print("Select the x index, y index and desired legend name corresponding to what you want to plot. Enter e if you want to input an expression. Enter f if you are finished with selecting columns to plot.")
+    
+                
+        xIndexSelection=processAllowedUserInputs(allowedSelections)
         
-        xIndexSelection=processAllowedUserInputs(allowedColumnIndices) 
         if(xIndexSelection=="f"):
             return curvesToPlot
         
-        yIndexSelection=processAllowedUserInputs(allowedColumnIndices)
+        if(xIndexSelection=="e"):
+            xIndexSelection=getValidRpnExpression(allowedColumnIndices)
+                
+        
+        yIndexSelection=processAllowedUserInputs(allowedSelections)
+        
         if(yIndexSelection=="f"):
             return curvesToPlot
+        
+        if(yIndexSelection=="e"):
+            yIndexSelection=getValidRpnExpression(allowedColumnIndices)
+            
         
         desiredLegendName=input()
         if(desiredLegendName=="f"):
             return curvesToPlot
+        
                             
         curvesToPlot.append((xIndexSelection,yIndexSelection,desiredLegendName))
 
@@ -134,8 +301,10 @@ def createUnitDictionary():
     densityKg_m3=(17,("density (kg/m^3)",M_kg/(D_m*D_m*D_m)))
     energyErg=(18,("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s)))
     energyJ=(19,("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s)))
+    phantomUnit1CustomLabel=(20,("Custom phantom unit 1",1.0))
+    phantomUnit2CustomLabel=(21,("Custom phantom unit 2",1.0))
     
-    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,massG,massKg,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3,energyErg,energyJ])
+    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,massG,massKg,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3,energyErg,energyJ,phantomUnit1CustomLabel,phantomUnit2CustomLabel])
     return unitDictionary
 
 
@@ -151,6 +320,18 @@ def getPlotUnits(unitDictionary):
     allowedUnitSelections=[str(i) for i in range(len(unitDictionary))]
     xUnitIndex=int(processAllowedUserInputs(allowedUnitSelections))
     yUnitIndex=int(processAllowedUserInputs(allowedUnitSelections))
+    
+    #Custom unit label selection is below.
+    if((xUnitIndex==20)or(yUnitIndex==20)):
+        print("Enter label for custom phantom unit 1")
+        selectedLabel=input()
+        unitDictionary[20]=(selectedLabel,1.0)
+        
+    if((xUnitIndex==21)or(yUnitIndex==21)):
+        print("Enter label for custom phantom unit 2")
+        selectedLabel=input()
+        unitDictionary[21]=(selectedLabel,1.0)
+ 
     
     return unitDictionary[xUnitIndex],unitDictionary[yUnitIndex]
         
@@ -183,8 +364,18 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,multipleFiles):
         currentYColumnKey=currentCurveToPlot[1]
         currentLegendName=currentCurveToPlot[2]
         
-        xData=columnData[currentXColumnKey]["values"]
-        yData=columnData[currentYColumnKey]["values"]
+        xData=[]
+        yData=[]
+        
+        if(type(currentXColumnKey)==str):
+            xData=columnData[currentXColumnKey]["values"]
+        else: #It is an RPN expression
+            xData=getDataForRpnExpression(columnData,currentXColumnKey[0],currentXColumnKey[1])
+         
+        if(type(currentYColumnKey)==str):
+            yData=columnData[currentYColumnKey]["values"]
+        else:
+            yData=getDataForRpnExpression(columnData,currentYColumnKey[0],currentYColumnKey[1])
         
         #New lists scaled for the correct units are created for the x and y axes; if done in place
         #it would cause problems with shared columns between plots.
@@ -208,9 +399,9 @@ def main():
         print("There are no files selected.")
     else:
         columnData=getColumnData(fileNames,openedFiles)
-        unitDictionary=createUnitDictionary()
 
         while(True):
+            unitDictionary=createUnitDictionary()
             curvesToPlot=getColumnPairsToPlot(fileNames,columnData)
             xUnits,yUnits=getPlotUnits(unitDictionary)
             plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,len(fileNames)>1)
