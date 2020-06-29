@@ -384,8 +384,9 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,multipleFiles):
             
         plotAxes.plot(xDataScaled,yDataScaled,label=currentLegendName)
      
-    legend=plotAxes.legend(loc=(1.025,0))
+    legend=plotAxes.legend(loc="best")
     legend.set_in_layout(True) #This along with the next line is needed to prevent a wide enough legend from being cut off by the figure's edge.
+    legend.set_draggable(True)
     plotFigure.tight_layout()
     
     plt.show()
