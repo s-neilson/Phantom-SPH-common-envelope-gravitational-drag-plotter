@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import csv
 import re
+import matplotlib
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 
 
@@ -337,10 +339,9 @@ def getPlotUnits(unitDictionary):
         
 
 #Plots all of the user selected x and y plots on top of one another.
-def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,multipleFiles):
+def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
     if(len(curvesToPlot)==0):
-        print("There is nothing to plot")
-        return
+        return None
     
     plotFigure=plt.figure()
     plotAxes=plotFigure.gca()
@@ -358,7 +359,7 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,multipleFiles):
     
     plotAxes.ticklabel_format(style="sci",scilimits=(0,0))
     
-    
+
     for currentCurveToPlot in curvesToPlot:
         currentXColumnKey=currentCurveToPlot[0]
         currentYColumnKey=currentCurveToPlot[1]
@@ -383,13 +384,83 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,multipleFiles):
         yDataScaled=[i*yScaleFactor for i in yData]
             
         plotAxes.plot(xDataScaled,yDataScaled,label=currentLegendName)
+
      
     legend=plotAxes.legend(loc="best")
-    legend.set_in_layout(True) #This along with the next line is needed to prevent a wide enough legend from being cut off by the figure's edge.
     legend.set_draggable(True)
     plotFigure.tight_layout()
     
-    plt.show()
+    return plotFigure
+
+#Creates the figure with plot controls and the functions that run when the controls are used.
+def createControls(plotFigure,controlVariables):
+    plotAxes=plotFigure.gca()
+    currentLines=plotAxes.get_lines()
+
+    #The functions that run when the controls are used as created below.
+    def createNewCombinedLegend(): #Creates a non split legend.
+        newCombinedLegend=plotAxes.legend(ncol=controlVariables[0],loc="best")
+        newCombinedLegend.set_draggable(True)
+                    
+    def legendSplitToggle(event):
+        plt.sca(plotAxes)  
+        controlVariables[1]=not controlVariables[1]
+        
+        if(controlVariables[1]):
+            (plotAxes.get_legend()).remove() #The current legend is removed.
+            currentLegendXShift=0.0 #Used to prevent all the new legends from being on top of each other.
+                        
+            for currentLine in currentLines:
+                newSplitLegend=plotAxes.legend(handles=[currentLine],loc=(0.25+currentLegendXShift,0.5))
+                newSplitLegend.set_draggable(True)
+                newSplitLegend.remove() #Done to prevent the legend being added twice to the figure.
+                plotAxes.add_artist(a=newSplitLegend)
+                currentLegendXShift+=0.05 #The next legend is shifted.
+                            
+        else: #The split legends are found and then removed.
+            splitLegends=plotAxes.findobj(match=matplotlib.legend.Legend)
+            for currentSplitLegend in splitLegends:
+                currentSplitLegend.remove()
+                createNewCombinedLegend()
+                    
+        plt.draw()
+                
+                        
+    def increaseLegendColumnNumber(event):
+        plt.sca(plotAxes)
+                
+        if(controlVariables[1]==False):
+            (plotAxes.get_legend()).remove() #The current legend is removed.
+            controlVariables[0]=min(len(currentLines),controlVariables[0]+1)
+            createNewCombinedLegend()
+            plt.draw()
+                    
+                
+    def decreaseLegendColumnNumber(event):
+        plt.sca(plotAxes)
+                
+        if(controlVariables[1]==False):
+            (plotAxes.get_legend()).remove() #The current legend is removed.
+            controlVariables[0]=max(1,controlVariables[0]-1)
+            createNewCombinedLegend()
+            plt.draw()
+                    
+                            
+    #The controls are created below.        
+    controlFigure=plt.figure(figsize=(4,2))
+    button1Axes=controlFigure.add_axes([0.3,0.5,0.4,0.15])
+    button2Axes=controlFigure.add_axes([0.05,0.3,0.4,0.15])
+    button3Axes=controlFigure.add_axes([0.55,0.3,0.4,0.15])
+            
+    button1=matplotlib.widgets.Button(ax=button1Axes,label="Toggle split legend")
+    button2=matplotlib.widgets.Button(ax=button2Axes,label="Less legend columns")
+    button3=matplotlib.widgets.Button(ax=button3Axes,label="More legend columns")
+                        
+    button1.on_clicked(legendSplitToggle)
+    button2.on_clicked(decreaseLegendColumnNumber)
+    button3.on_clicked(increaseLegendColumnNumber)
+    return button1,button2,button3 #Returned so the button objects exist outside the scope of this function.
+
 
 
 
@@ -405,8 +476,16 @@ def main():
             unitDictionary=createUnitDictionary()
             curvesToPlot=getColumnPairsToPlot(fileNames,columnData)
             xUnits,yUnits=getPlotUnits(unitDictionary)
-            plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits,len(fileNames)>1)
-    
+            
+            plotFigure=plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits)
+            if(plotFigure is not None): #If there is something to plot.
+                controlVariables=[1,False] #Holds the number of columns in a non plit legend and whether the legend has been split.
+                b1,b2,b3=createControls(plotFigure,controlVariables)
+  
+                plt.show(block=True)
+            else:
+                print("There is nothing to plot")
+            
             print("Do you want to create another plot with the file/s? Enter yes or no.")
             if(processAllowedUserInputs(["yes","no"])=="no"):
                 break #The user has chosen not to create any more plots with the file/s.
@@ -414,6 +493,5 @@ def main():
 
 if(__name__=="__main__"):
     main()
-    
 
     
