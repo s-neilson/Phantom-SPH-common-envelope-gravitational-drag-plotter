@@ -190,8 +190,7 @@ def getColumnData(fileNames,openedFiles):
         currentFileDataFloat=[[float(currentFileDataString[i][j]) for i in range(1,rowCount)] for j in range(columnCount)] #Stores the data in a float format instead
         #of a string format. Each sublist contains the values for a particular column. The first row is ignored because it contains the column names for the file.
 
-        currentColumnTitles=re.findall("(?<=\[).{1,15}(?=\])",firstLine) #All substrings of the first line in the file with a length from 1 to 15 characters between a [ and a ] are found.    
-        
+        currentColumnTitles=re.findall("(?<=\[)([^\[]{1,})(?=\])",firstLine) #All substrings of the first line in the file with a length of at least 1 character between a [ and a ] and not containing a [ are found.    
         for j in currentColumnTitles: #Loops through all found column titles (column numbers and their names).
             columnNumber=re.search("(?<=^)( *)([0-9]+)",j) #Gets a sequence of numbers following the start of the string and possibly some spaces.
             columnName=re.search("(?<=^)( *[0-9]+ *)(.+)",j) #Gets the substring following the start of the string, possibly some spaces, a number and possibly some spaces.
