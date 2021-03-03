@@ -1,158 +1,58 @@
 from collections import OrderedDict
 import csv
-import re
+import regex
 import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 
+from equation import getValidRpnExpression,getDataForRpnExpression
 
 
-def rpnTokenIsOperator(token):
-    return (token in ["+","-","*","/","^"])
 
-
-def rpnTokenIsNumber(token):
-    tokenNumber=0.0
+#Integrates yValues over xValues while adding a constant of integration to the output values.
+def integrateValues(xValues,yValues,constantOfIntegration):
+    if(len(xValues)!=len(yValues)):
+        print("Lengths of lists do not match.")
+        return None
+       
+    integralValues=[]
+    currentIntegralValue=0.0
     
-    try:
-        tokenNumber=float(token)
-    except ValueError: #Casting the token to a number has failed.
-        return False
-    
-    tokenNumber+=1.0 #To prevent a variable not being used error.
-    return True
-
-
-def rpnTokenIsVariable(token):
-    return (not rpnTokenIsOperator(token)) and (not rpnTokenIsNumber(token))
-
-
-#Turns an RPN expression into a list of tokens.
-def rpnTurnIntoList(expressionString):
-    outputList=[] #A list of the tokens in the expression.
-    currentToken="" #Holds the current token that is being constructed.
-    
-    for i,currentCharacter in enumerate(expressionString):
-        if(currentCharacter==" "): #The current token has ended, meaning that it is added to the output list.
-            outputList.append(currentToken)
-            currentToken="" #The current token is reset.
-        else:
-            currentToken+=currentCharacter #The current token is continued to be constructed.
-            
-        if((i+1)==len(expressionString)): #If the final character in the string has been reached.
-            outputList.append(currentToken)
-            
-    return outputList
-
-
-#Gets the variables to the filled in in an RPN expression.
-def rpnGetVariables(expressionList,allowedVariableList):
-    variableList=[] #An array of tuples that hold variable names and indices.
-    
-    for i,currentToken in enumerate(expressionList):
-        if(rpnTokenIsVariable(currentToken)):           
-            if((currentToken in allowedVariableList)==False):
-                return [] #An empty list is returned if the variable name is not allowed.
-            
-            currentVariable=(currentToken,i)
-            variableList.append(currentVariable)
-            
-    return variableList
-
-
-#Checks if an RPN expression is valid.
-def rpnCheckValidExpression(expressionList):
-    rpnStackSize=0 #Only the stack size is needed, not the stack itself.
-    
-    for currentToken in expressionList:
-        if(rpnTokenIsOperator(currentToken)): #If the current token is an operator
-            rpnStackSize-=1 #Due to an operator removing two numbers from the stack and adding a result back into it.
-        else: #The current token is a number that needs to be added to the stack.
-            rpnStackSize+=1
-            
-        if(rpnStackSize<1):
-            return False #An invalid expression has resulted in too many items being removed from the stack.
+    for i in range(len(xValues)):
+        currentXValue=xValues[i]
+        currentYValue=yValues[i]
+        previousXValue=xValues[max(0,i-1)] #The previous x and y values are equal to the current x and y values if the first
+        previousYValue=yValues[max(0,i-1)] #element of the integral is being evaluated.
         
-    return rpnStackSize==1 #The expression is valid if only one element (the result) is left in the stack.
-
-
-def getValidRpnExpression(allowedVariableList):
-    print("Type a valid reverse polish notation expression. Tokens must be separated by spaces. Data columns are referenced by using their key as a token. Allowed operators are +,-,*,/ and ^.")
-    
-    while(True):
-        expressionString=input()
-        expressionList=rpnTurnIntoList(expressionString)
-        expressionVariables=rpnGetVariables(expressionList,allowedVariableList)
+        currentIntegralValue+=(0.5*(currentXValue-previousXValue)*(currentYValue+previousYValue)) #Uses the area of a trapezium.
+        integralValues.append(currentIntegralValue+constantOfIntegration)
         
-        if(len(expressionVariables)==0):
-            print("That RPN expression is invalid either due to non recognised variable names or no variables.")
-            continue
-                
-        if(rpnCheckValidExpression(expressionList)):
-            return (expressionList,expressionVariables)
-        else:
-            print("That RPN expression is syntacically invalid.")
- 
-
-#Parses an RPN expression (in list form) and returns the result
-def rpnParse(expressionList):
-    rpnStack=[]
-    
-    for currentToken in expressionList:
-        if(rpnTokenIsNumber(currentToken)):
-            rpnStack.append(float(currentToken))
-        elif(rpnTokenIsOperator(currentToken)):
-            #The last two number on the stack are removed.
-            rightNumber=rpnStack.pop()
-            leftNumber=rpnStack.pop()
-            
-            currentResult=0.0 #Holds the result of the operation of the two removed numbers.
-            if(currentToken=="+"):
-                currentResult=leftNumber+rightNumber
-            elif(currentToken=="-"):
-                currentResult=leftNumber-rightNumber
-            elif(currentToken=="*"):
-                currentResult=leftNumber*rightNumber
-            elif(currentToken=="/"):
-                currentResult=leftNumber/rightNumber
-            elif(currentToken=="^"):
-                currentResult=leftNumber**rightNumber
-            else:
-                currentResult=0.0
-                
-            rpnStack.append(currentResult)
-            
-
-    return rpnStack[0] #The size of the stack at the end will be one element and this element is the answer to the expression.
-
-
-#Creates a list of datapoints to be computed from an RPN expression containing references to columns.
-def getDataForRpnExpression(columnData,expressionList,expressionVariables):
-    expressionResult=[] #A list to hold all the computed datapoints.
-    
-    currentRow=0
-    commonDatapointsExist=True
-    while(commonDatapointsExist): #This loop goes through all rows common to the variables columns in the expression.
+    return integralValues
         
-        #This loop replaces the variables in expressionList with values from the correct columns.
-        for currentVariable in expressionVariables:
-            currentVariableKey=currentVariable[0]
-            currentColumnData=columnData[currentVariableKey]["values"]
+
+
+#Differentiates a list of values with respect to an equally sized other list of values. The derivative is sampled between
+#two points averageRadius away from the central point.
+def differentiateValues(xValues,yValues,averageRadius):
+    if(len(xValues)!=len(yValues)):
+        print("Lengths of lists do not match.")
+        return None
+    
+    derivativeValues=[]
+    
+    for i in range(len(xValues)):
+        #The min and max functions are used to ensure that indices outside of the list are not used.
+        leftIndex=max(0,i-averageRadius)
+        rightIndex=min(len(xValues)-1,i+averageRadius)
                         
-            currentDatapoint=currentColumnData[currentRow]
-            currentVariableIndex=currentVariable[1] #The index of the element in expressionList to be replaced by the data corresponding to currentDatapoint
-            expressionList[currentVariableIndex]=str(currentDatapoint) #The RPN parser expects all tokens to be strings.
-            
-            if((currentRow+1)==len(currentColumnData)):
-                commonDatapointsExist=False #There is no further data in at least one of the columns, so further iterations of the while loop are stopped.
-                
-        currentComputedDatapoint=rpnParse(expressionList)
-        expressionResult.append(currentComputedDatapoint) #The datapoint computed from the expression is added to the result list.
-        currentRow+=1
+        currentDerivativeValue=(yValues[rightIndex]-yValues[leftIndex])/(xValues[rightIndex]-xValues[leftIndex])
+        derivativeValues.append(currentDerivativeValue)
         
-    return expressionResult
-        
-                
+    return derivativeValues
+
+
+
+
 
 #Allows the user to select what files they want to open.
 def openFiles():
@@ -190,10 +90,10 @@ def getColumnData(fileNames,openedFiles):
         currentFileDataFloat=[[float(currentFileDataString[i][j]) for i in range(1,rowCount)] for j in range(columnCount)] #Stores the data in a float format instead
         #of a string format. Each sublist contains the values for a particular column. The first row is ignored because it contains the column names for the file.
 
-        currentColumnTitles=re.findall("(?<=\[)([^\[]{1,})(?=\])",firstLine) #All substrings of the first line in the file with a length of at least 1 character between a [ and a ] and not containing a [ are found.    
+        currentColumnTitles=regex.findall("(?<=\[)([^\[]{1,})(?=\])",firstLine) #All substrings of the first line in the file with a length of at least 1 character between a [ and a ] and not containing a [ are found.    
         for j in currentColumnTitles: #Loops through all found column titles (column numbers and their names).
-            columnNumber=re.search("(?<=^)( *)([0-9]+)",j) #Gets a sequence of numbers following the start of the string and possibly some spaces.
-            columnName=re.search("(?<=^)( *[0-9]+ *)(.+)",j) #Gets the substring following the start of the string, possibly some spaces, a number and possibly some spaces.
+            columnNumber=regex.search("(?<=^)( *)([0-9]+)",j) #Gets a sequence of numbers following the start of the string and possibly some spaces.
+            columnName=regex.search("(?<=^)( *[0-9]+ *)(.+)",j) #Gets the substring following the start of the string, possibly some spaces, a number and possibly some spaces.
             
             columnKey=columnNumber.group(2)
             columnDataIndex=int(columnKey)-1 #This number is shifted down by 1 because the column data list starts indices at zero while the numbers in the column titles start at 1.
@@ -218,57 +118,143 @@ def processAllowedUserInputs(allowedInputs):
         
 
         
-def getColumnPairsToPlot(fileNames,columnData):
-    curvesToPlot=[] #Holds a list of tuples containing the keys of the x and y column pairs to be plotted along with the desired legend name.
+def getColumnPairsToPlot(columnData):
+    curvesToPlot=[] #Holds a list of tuples containing the keys of the x and y column pairs to be plotted along with the desired legend name.      
+        
     
-    allowedColumnIndices=[i for i in columnData.keys()]    
-    allowedSelections=[]
-    allowedSelections.extend(allowedColumnIndices)
-    allowedSelections.append("f") #The entry for choosing to stop selecting column pairs.
-    allowedSelections.append("e") #The entry for RPN expression input.
+    while(True): #Loops every time a new column is created by the user.
+        allowedColumnKeys=[i for i in columnData.keys()]    
+        allowedSelections=[]
+        allowedSelections.extend(allowedColumnKeys)
+        allowedSelections.append("f") #The entry for choosing to stop selecting column pairs.
+        allowedSelections.append("l") #The entry for creating a column based on a range between two values.
+        allowedSelections.append("e") #The entry for RPN expression input.
+        allowedSelections.append("i") #The entry for integration.
+        allowedSelections.append("d") #The entry for differentiation.
     
-    
-    print("List of columns that can be plotted:")
-    previousFileName=""    
-    for currentKey,currentColumnData in columnData.items(): #Loops through all columns.
+        print("List of columns that can be plotted:")
+        previousFileName=""    
+        for currentKey,currentColumnData in columnData.items(): #Loops through all columns.
             currentFileName=currentColumnData["fileName"]
             currentColumnName=currentColumnData["columnName"]
+            currentColumnLength=str(len(currentColumnData["values"]))
             
             if(currentFileName!=previousFileName): #The file name is displayed if the current column is associated with a different file than the previous column.
                 print(" "+currentFileName)
                 previousFileName=currentFileName
                 
-            print("  "+currentKey+", "+currentColumnName)
-    
-    
-    while(True):
-        print("Select the x index, y index and desired legend name corresponding to what you want to plot. Enter e if you want to input an expression. Enter f if you are finished with selecting columns to plot.")
-    
-                
-        xIndexSelection=processAllowedUserInputs(allowedSelections)
+            print("  "+currentKey+", "+currentColumnName+", ("+currentColumnLength+" values)")
+       
         
-        if(xIndexSelection=="f"):
-            return curvesToPlot
-        
-        if(xIndexSelection=="e"):
-            xIndexSelection=getValidRpnExpression(allowedColumnIndices)
-                
-        
-        yIndexSelection=processAllowedUserInputs(allowedSelections)
-        
-        if(yIndexSelection=="f"):
-            return curvesToPlot
-        
-        if(yIndexSelection=="e"):
-            yIndexSelection=getValidRpnExpression(allowedColumnIndices)
+        def addNewColumn(newColumnData):
+            newColumnCount=0
+            for currentKey in columnData.keys():
+                if(currentKey[-1]=="_"): #If the current column has a key that ends with the _ character then it is a user made column.
+                    newColumnCount+=1
             
+            print("Enter a name for the new column")
+            newColumnName=input()
+            
+            newColumn={"fileName":"User created columns","columnName":newColumnName,"values":newColumnData}
+            newColumnKey=str(newColumnCount+1)+"_" #Keys for user created columns use the "_" character as a suffix.
+            columnData[newColumnKey]=newColumn
+            
+            
+        def createLinearColumn():
+            print("Enter number of elements for the column to have")
+            elementCount=int(input())
+            print("Enter starting element")
+            startingElement=float(input())
+            print("Enter ending element")
+            endingElement=float(input())
+            
+            differenceBetweenElements=(endingElement-startingElement)/(float(elementCount)-1.0)
+            newColumnValues=[startingElement+(float(i)*differenceBetweenElements) for i in range(0,elementCount)]
+            addNewColumn(newColumnValues)
+                        
         
-        desiredLegendName=input()
-        if(desiredLegendName=="f"):
-            return curvesToPlot
+        def createColumnFromEquation():
+            expressionList,expressionVariables=getValidRpnExpression(allowedColumnKeys)
+            newColumnData=getDataForRpnExpression(columnData,expressionList,expressionVariables)
+            addNewColumn(newColumnData)
+            
+        def createColumnFromIntegration():
+            print("Enter column key to be integrated")
+            yKey=processAllowedUserInputs(allowedColumnKeys)
+            print("Enter column key to integrate over")
+            xKey=processAllowedUserInputs(allowedColumnKeys)
+            print("Enter constant of integration")
+            constantOfIntegration=float(input())
+            
+            integralValues=integrateValues(columnData[xKey]["values"],columnData[yKey]["values"],constantOfIntegration)
+            if(integralValues is not None): #A new column will not be added if the lists chosen for integration have different lengths.
+                addNewColumn(integralValues)
+                        
+            
+        def createColumnFromDifferentiation():
+            print("Enter column key to be differentiated")
+            yKey=processAllowedUserInputs(allowedColumnKeys)
+            print("Enter column key to differentiate by")
+            xKey=processAllowedUserInputs(allowedColumnKeys)            
+            print("Enter distance from central point to calculate finite difference on")
+            differentiationRadius=int(input())
+            
+            derivativeValues=differentiateValues(columnData[xKey]["values"],columnData[yKey]["values"],differentiationRadius)
+            if(derivativeValues is not None): #A new column will not be added if the lists chosen for differentiation have different lengths.
+                addNewColumn(derivativeValues)
+                  
+            
+    
+        while(True): #Loops while the user is selecting columns to plot.
+            print("Select the x index, y index and desired legend name corresponding to what you want to plot, separated by commas. Enter f in you are finished with selecting columns to plot.")
+            print("")
+            print("Other options are:")
+            print("l for a linearly spaced column created between two values.")
+            print("e for a reverse polish notation expression.")
+            print("i for the integral of a column with respect to another column.")
+            print("d for the derivative of a column with respect to another column.")
+                        
+            columnChoiceString=input()
+            columnChoiceList=regex.findall("(?<=(^|,))([^,]*)(?=($|,))",columnChoiceString) #Splits the string up in order with commas as the separator.
+
+            xIndexSelection=columnChoiceList[0][1]           
+            if(xIndexSelection not in allowedSelections):
+                print("An invalid choice was given for the x axis or option choice.")
+                continue
         
-                            
-        curvesToPlot.append((xIndexSelection,yIndexSelection,desiredLegendName))
+            if(xIndexSelection=="f"):
+                return curvesToPlot
+            
+            if(xIndexSelection=="l"):
+                createLinearColumn()
+                break
+        
+            if(xIndexSelection=="e"):
+                createColumnFromEquation()
+                break
+            
+            if(xIndexSelection=="i"):
+                createColumnFromIntegration()
+                break           
+            
+            if(xIndexSelection=="d"):
+                createColumnFromDifferentiation()
+                break
+            
+
+
+            if(len(columnChoiceList)!=3):
+                print("There needs to be three comma separated strings in the user input or a single valid option choice.")
+                continue
+
+            yIndexSelection=columnChoiceList[1][1]
+            if(yIndexSelection not in allowedColumnKeys):
+                print("An invalid choice was given for the y axis.")
+                continue
+                     
+            desiredLegendName=columnChoiceList[2][1]
+                               
+            curvesToPlot.append((xIndexSelection,yIndexSelection,desiredLegendName))
 
 
 #Creates a dictionary to hold information about the units used. A number key is associated with a tuple containing the
@@ -277,35 +263,50 @@ def createUnitDictionary():
     #Phantom unit conversions.
     M_kg=1.99e30 #Mass in kg.
     M_g=1.99e33 #Mass in g.
+    M_sm=1.0 #Mass in solar masses.
     D_m=696.0e6 #Distance in m.
     D_cm=696.0e8 #Distance in cm.
     D_sr=1.0 #Distance in solar radii
     T_s=1593.6 #Time in s.
     
-    timeS=(0,("time (s)",T_s))
-    timeYr=(1,("time (years)",T_s/(86400.0*365.25)))
-    distanceCm=(2,("distance (cm)",D_cm))
-    distanceM=(3,("distance (m)",D_m))
-    distanceSr=(4,("distance (solar radii)",D_sr))
-    massG=(5,("mass (g)",M_g))
-    massKg=(6,("mass (kg)",M_kg))
-    velocityCm_s=(7,("velocity (cm/s)",D_cm/T_s))
-    velocityM_s=(8,("velocity (m/s)",D_m/T_s))
-    velocityKm_s=(9,("velocity (km/s)",(D_m/1000.0)/T_s))
-    forceDyn=(10,("force (dyn)",(M_g*D_cm)/(T_s*T_s)))
-    forceN=(11,("force (N)",(M_kg*D_m)/(T_s*T_s)))
-    angularmomentumGcm2_s=(12,("angular momentum (g cm^2/s)",(M_g*D_cm*D_cm)/T_s))
-    angularmomentumKgM2_s=(13,("angular momentum (kg m^2/s)",(M_kg*D_m*D_m)/T_s))
-    torqueDynCm=(14,("torque (dyn cm)",(M_g*D_cm*D_cm)/(T_s*T_s)))
-    torqueNm=(15,("torque (Nm)",(M_kg*D_m*D_m)/(T_s*T_s)))
-    densityG_cm3=(16,("density (g/cm^3)",M_g/(D_cm*D_cm*D_cm)))
-    densityKg_m3=(17,("density (kg/m^3)",M_kg/(D_m*D_m*D_m)))
-    energyErg=(18,("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s)))
-    energyJ=(19,("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s)))
-    phantomUnit1CustomLabel=(20,("Custom phantom unit 1",1.0))
-    phantomUnit2CustomLabel=(21,("Custom phantom unit 2",1.0))
     
-    unitDictionary=dict([timeS,timeYr,distanceCm,distanceM,distanceSr,massG,massKg,velocityCm_s,velocityM_s,velocityKm_s,forceDyn,forceN,angularmomentumGcm2_s,angularmomentumKgM2_s,torqueDynCm,torqueNm,densityG_cm3,densityKg_m3,energyErg,energyJ,phantomUnit1CustomLabel,phantomUnit2CustomLabel])
+    timeS=("time (s)",T_s)
+    timeYr=("time (years)",T_s/(86400.0*365.25))
+    distanceCm=("distance (cm)",D_cm)
+    distanceM=("distance (m)",D_m)
+    distanceSr=("distance (solar radii)",D_sr)
+    massG=("mass (g)",M_g)
+    massKg=("mass (kg)",M_kg)
+    massSm=("mass (solar masses)",M_sm)
+    velocityCm_s=("velocity (cm/s)",D_cm/T_s)
+    velocityM_s=("velocity (m/s)",D_m/T_s)
+    velocityKm_s=("velocity (km/s)",(D_m/1000.0)/T_s)
+    forceDyn=("force (dyn)",(M_g*D_cm)/(T_s*T_s))
+    forceN=("force (N)",(M_kg*D_m)/(T_s*T_s))
+    angularmomentumGcm2_s=("angular momentum (g cm^2/s)",(M_g*D_cm*D_cm)/T_s)
+    angularmomentumKgM2_s=("angular momentum (kg m^2/s)",(M_kg*D_m*D_m)/T_s)
+    torqueDynCm=("torque (dyn cm)",(M_g*D_cm*D_cm)/(T_s*T_s))
+    torqueNm=("torque (Nm)",(M_kg*D_m*D_m)/(T_s*T_s))
+    densityG_cm3=("density (g/cm^3)",M_g/(D_cm*D_cm*D_cm))
+    densityKg_m3=("density (kg/m^3)",M_kg/(D_m*D_m*D_m))
+    energyErg=("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s))
+    energyJ=("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s))
+    phantomUnit1CustomLabel=("Custom phantom unit 1",1.0)
+    phantomUnit2CustomLabel=("Custom phantom unit 2",1.0)
+    
+    unitList=[timeS,timeYr,
+              distanceCm,distanceM,distanceSr,
+              massG,massKg,massSm,
+              velocityCm_s,velocityM_s,velocityKm_s,
+              forceDyn,forceN,
+              angularmomentumGcm2_s,angularmomentumKgM2_s,
+              torqueDynCm,torqueNm,
+              densityG_cm3,densityKg_m3,
+              energyErg,energyJ,
+              phantomUnit1CustomLabel,phantomUnit2CustomLabel]
+    
+    unitListWithKeys=[(key,value) for key,value in enumerate(unitList)] #Uses sequential numbers as keys for the units in the order they were added to the list.   
+    unitDictionary=dict(unitListWithKeys)
     return unitDictionary
 
 
@@ -322,16 +323,18 @@ def getPlotUnits(unitDictionary):
     xUnitIndex=int(processAllowedUserInputs(allowedUnitSelections))
     yUnitIndex=int(processAllowedUserInputs(allowedUnitSelections))
     
-    #Custom unit label selection is below.
-    if((xUnitIndex==20)or(yUnitIndex==20)):
+    
+    numberOfUnits=len(unitDictionary)
+    #Custom unit label selection is below. Assumes that the custom phantom units are the last two units.
+    if((xUnitIndex==(numberOfUnits-2))or(yUnitIndex==(numberOfUnits-2))):
         print("Enter label for custom phantom unit 1")
         selectedLabel=input()
-        unitDictionary[20]=(selectedLabel,1.0)
+        unitDictionary[numberOfUnits-2]=(selectedLabel,1.0)
         
-    if((xUnitIndex==21)or(yUnitIndex==21)):
+    if((xUnitIndex==(numberOfUnits-1))or(yUnitIndex==(numberOfUnits-1))):
         print("Enter label for custom phantom unit 2")
         selectedLabel=input()
-        unitDictionary[21]=(selectedLabel,1.0)
+        unitDictionary[numberOfUnits-1]=(selectedLabel,1.0)
  
     
     return unitDictionary[xUnitIndex],unitDictionary[yUnitIndex]
@@ -364,18 +367,8 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
         currentYColumnKey=currentCurveToPlot[1]
         currentLegendName=currentCurveToPlot[2]
         
-        xData=[]
-        yData=[]
-        
-        if(type(currentXColumnKey)==str):
-            xData=columnData[currentXColumnKey]["values"]
-        else: #It is an RPN expression
-            xData=getDataForRpnExpression(columnData,currentXColumnKey[0],currentXColumnKey[1])
-         
-        if(type(currentYColumnKey)==str):
-            yData=columnData[currentYColumnKey]["values"]
-        else:
-            yData=getDataForRpnExpression(columnData,currentYColumnKey[0],currentYColumnKey[1])
+        xData=columnData[currentXColumnKey]["values"]
+        yData=columnData[currentYColumnKey]["values"]
         
         #New lists scaled for the correct units are created for the x and y axes; if done in place
         #it would cause problems with shared columns between plots.
@@ -466,28 +459,26 @@ def createControls(plotFigure,controlVariables):
 def main():
     fileNames,openedFiles=openFiles()
 
-    if(len(openedFiles)==0):
-        print("There are no files selected.")
-    else:
-        columnData=getColumnData(fileNames,openedFiles)
+    columnData=getColumnData(fileNames,openedFiles)
 
-        while(True):
-            unitDictionary=createUnitDictionary()
-            curvesToPlot=getColumnPairsToPlot(fileNames,columnData)
+    while(True):
+        unitDictionary=createUnitDictionary()
+        curvesToPlot=getColumnPairsToPlot(columnData)
+        
+        if(len(curvesToPlot)==0):
+            print("There is nothing to plot.")
+        else:
             xUnits,yUnits=getPlotUnits(unitDictionary)
             
             plotFigure=plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits)
-            if(plotFigure is not None): #If there is something to plot.
-                controlVariables=[1,False] #Holds the number of columns in a non plit legend and whether the legend has been split.
-                b1,b2,b3=createControls(plotFigure,controlVariables)
+            controlVariables=[1,False] #Holds the number of columns in a non plit legend and whether the legend has been split.
+            b1,b2,b3=createControls(plotFigure,controlVariables)
   
-                plt.show(block=True)
-            else:
-                print("There is nothing to plot")
+            plt.show(block=True)
             
-            print("Do you want to create another plot with the file/s? Enter yes or no.")
-            if(processAllowedUserInputs(["yes","no"])=="no"):
-                break #The user has chosen not to create any more plots with the file/s.
+        print("Do you want to create another plot with the file/s? Enter yes or no.")
+        if(processAllowedUserInputs(["yes","no"])=="no"):
+            break #The user has chosen not to create any more plots with the file/s.
                 
 
 if(__name__=="__main__"):
