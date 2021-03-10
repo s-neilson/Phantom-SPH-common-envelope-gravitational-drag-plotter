@@ -4,6 +4,8 @@ import regex
 import matplotlib
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
+from numpy.polynomial.polynomial import polyfit
+from numpy.polynomial.polynomial import polyval
 
 from equation import getValidRpnExpression,getDataForRpnExpression
 
@@ -131,6 +133,7 @@ def getColumnPairsToPlot(columnData):
         allowedSelections.append("e") #The entry for RPN expression input.
         allowedSelections.append("i") #The entry for integration.
         allowedSelections.append("d") #The entry for differentiation.
+        allowedSelections.append("p") #The entry for a polynomial fit.
     
         print("List of columns that can be plotted:")
         previousFileName=""    
@@ -202,17 +205,36 @@ def getColumnPairsToPlot(columnData):
             derivativeValues=differentiateValues(columnData[xKey]["values"],columnData[yKey]["values"],differentiationRadius)
             if(derivativeValues is not None): #A new column will not be added if the lists chosen for differentiation have different lengths.
                 addNewColumn(derivativeValues)
-                  
+                
+        
+        #Creates a column from a polynomial fitted to two sets of columns.
+        def createColumnFromPolynomialFit():
+            print("Enter column key for x axis")
+            xKey=processAllowedUserInputs(allowedColumnKeys)
+            print("Enter column key for y axis")
+            yKey=processAllowedUserInputs(allowedColumnKeys)
+            print("Enter fit order")
+            fitOrder=int(input())
             
+            xData=columnData[xKey]["values"]
+            yData=columnData[yKey]["values"]
+            if(len(xData)==len(yData)): #If the x and y data point sets have the same length.
+                fitCoefficients=polyfit(xData,yData,fitOrder,full=False)
+                fittedValues=polyval(xData,fitCoefficients)
+                print("Polynomial fit coefficients in order from the lowest to heighest are: "+str(fitCoefficients))
+                addNewColumn(fittedValues)
+                
+                                         
     
         while(True): #Loops while the user is selecting columns to plot.
             print("Select the x index, y index and desired legend name corresponding to what you want to plot, separated by commas. Enter f in you are finished with selecting columns to plot.")
             print("")
             print("Other options are:")
             print("l for a linearly spaced column created between two values.")
-            print("e for a reverse polish notation expression.")
-            print("i for the integral of a column with respect to another column.")
-            print("d for the derivative of a column with respect to another column.")
+            print("e for a column created from reverse polish notation expression.")
+            print("i for a column that is the integral of a column with respect to another column.")
+            print("d for a column that is the derivative of a column with respect to another column.")
+            print("p for column created from a polynomial fit of two other columns.")
                         
             columnChoiceString=input()
             columnChoiceList=regex.findall("(?<=(^|,))([^,]*)(?=($|,))",columnChoiceString) #Splits the string up in order with commas as the separator.
@@ -239,6 +261,10 @@ def getColumnPairsToPlot(columnData):
             
             if(xIndexSelection=="d"):
                 createColumnFromDifferentiation()
+                break
+            
+            if(xIndexSelection=="p"):
+                createColumnFromPolynomialFit()
                 break
             
 
