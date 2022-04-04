@@ -8,7 +8,7 @@ from numpy.polynomial.polynomial import polyfit
 from numpy.polynomial.polynomial import polyval
 
 from equation import getValidRpnExpression,getDataForRpnExpression
-
+from controls import createControls
 
 
 #Integrates yValues over xValues while adding a constant of integration to the output values.
@@ -284,7 +284,7 @@ def getColumnPairsToPlot(columnData):
 
 
 #Creates a dictionary to hold information about the units used. A number key is associated with a tuple containing the
-#unit name and scaling factor from phantom units.
+#axis name, unit name and scaling factor from phantom units.
 def createUnitDictionary():
     #Phantom unit conversions.
     M_kg=1.99e30 #Mass in kg.
@@ -296,29 +296,29 @@ def createUnitDictionary():
     T_s=1593.6 #Time in s.
     
     
-    timeS=("time (s)",T_s)
-    timeYr=("time (years)",T_s/(86400.0*365.25))
-    distanceCm=("distance (cm)",D_cm)
-    distanceM=("distance (m)",D_m)
-    distanceSr=("distance ($R\odot$)",D_sr)
-    massG=("mass (g)",M_g)
-    massKg=("mass (kg)",M_kg)
-    massSm=("mass ($M\odot$)",M_sm)
-    velocityCm_s=("velocity (cm/s)",D_cm/T_s)
-    velocityM_s=("velocity (m/s)",D_m/T_s)
-    velocityKm_s=("velocity (km/s)",(D_m/1000.0)/T_s)
-    forceDyn=("force (dyn)",(M_g*D_cm)/(T_s*T_s))
-    forceN=("force (N)",(M_kg*D_m)/(T_s*T_s))
-    angularmomentumGcm2_s=("angular momentum (g cm^2/s)",(M_g*D_cm*D_cm)/T_s)
-    angularmomentumKgM2_s=("angular momentum (kg m^2/s)",(M_kg*D_m*D_m)/T_s)
-    torqueDynCm=("torque (dyn cm)",(M_g*D_cm*D_cm)/(T_s*T_s))
-    torqueNm=("torque (Nm)",(M_kg*D_m*D_m)/(T_s*T_s))
-    densityG_cm3=("density (g/cm^3)",M_g/(D_cm*D_cm*D_cm))
-    densityKg_m3=("density (kg/m^3)",M_kg/(D_m*D_m*D_m))
-    energyErg=("energy (erg)",(M_g*D_cm*D_cm)/(T_s*T_s))
-    energyJ=("energy (J)",(M_kg*D_m*D_m)/(T_s*T_s))
-    phantomUnit1CustomLabel=("Custom phantom unit 1",1.0)
-    phantomUnit2CustomLabel=("Custom phantom unit 2",1.0)
+    timeS=("time","s",T_s)
+    timeYr=("time","years",T_s/(86400.0*365.25))
+    distanceCm=("distance","cm",D_cm)
+    distanceM=("distance","m",D_m)
+    distanceSr=("distance","$R\odot$",D_sr)
+    massG=("mass","g",M_g)
+    massKg=("mass","kg",M_kg)
+    massSm=("mass","$M\odot$",M_sm)
+    velocityCm_s=("velocity","cm/s",D_cm/T_s)
+    velocityM_s=("velocity","m/s",D_m/T_s)
+    velocityKm_s=("velocity","km/s",(D_m/1000.0)/T_s)
+    forceDyn=("force","dyn",(M_g*D_cm)/(T_s*T_s))
+    forceN=("force","N",(M_kg*D_m)/(T_s*T_s))
+    angularmomentumGcm2_s=("angular momentum","g cm^2/s",(M_g*D_cm*D_cm)/T_s)
+    angularmomentumKgM2_s=("angular momentum","kg m^2/s",(M_kg*D_m*D_m)/T_s)
+    torqueDynCm=("torque","dyn cm",(M_g*D_cm*D_cm)/(T_s*T_s))
+    torqueNm=("torque","Nm",(M_kg*D_m*D_m)/(T_s*T_s))
+    densityG_cm3=("density","g/cm^3",M_g/(D_cm*D_cm*D_cm))
+    densityKg_m3=("density","kg/m^3",M_kg/(D_m*D_m*D_m))
+    energyErg=("energy","erg",(M_g*D_cm*D_cm)/(T_s*T_s))
+    energyJ=("energy","J",(M_kg*D_m*D_m)/(T_s*T_s))
+    phantomUnit1CustomLabel=("Custom phantom unit 1","",1.0)
+    phantomUnit2CustomLabel=("Custom phantom unit 2","",1.0)
     
     unitList=[timeS,timeYr,
               distanceCm,distanceM,distanceSr,
@@ -341,7 +341,7 @@ def getPlotUnits(unitDictionary):
     
     for currentUnit in unitDictionary.items():
         currentUnitNumber=currentUnit[0]
-        currentUnitName=currentUnit[1][0]
+        currentUnitName=currentUnit[1][0]+" ("+currentUnit[1][1]+")"
         print(" "+str(currentUnitNumber)+", "+currentUnitName)
         
     
@@ -353,14 +353,18 @@ def getPlotUnits(unitDictionary):
     numberOfUnits=len(unitDictionary)
     #Custom unit label selection is below. Assumes that the custom phantom units are the last two units.
     if((xUnitIndex==(numberOfUnits-2))or(yUnitIndex==(numberOfUnits-2))):
-        print("Enter label for custom phantom unit 1")
-        selectedLabel=input()
-        unitDictionary[numberOfUnits-2]=(selectedLabel,1.0)
+        print("Enter axis name for custom phantom unit 1")
+        customAxisName=input()
+        print("Enter unit name for custom phantom unit 1")
+        customUnitName=input()
+        unitDictionary[numberOfUnits-2]=(customAxisName,customUnitName,1.0)
         
     if((xUnitIndex==(numberOfUnits-1))or(yUnitIndex==(numberOfUnits-1))):
-        print("Enter label for custom phantom unit 2")
-        selectedLabel=input()
-        unitDictionary[numberOfUnits-1]=(selectedLabel,1.0)
+        print("Enter axis name for custom phantom unit 2")
+        customAxisName=input()
+        print("Enter unit name for custom phantom unit 1")
+        customUnitName=input()
+        unitDictionary[numberOfUnits-1]=(customAxisName,customUnitName,1.0)
  
     
     return unitDictionary[xUnitIndex],unitDictionary[yUnitIndex]
@@ -374,18 +378,17 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
     plotFigure=plt.figure()
     plotAxes=plotFigure.gca()
     
-    
     #The unit conversion factors from phantom units.
-    xScaleFactor=xUnits[1]
-    yScaleFactor=yUnits[1]
+    xScaleFactor=xUnits[2]
+    yScaleFactor=yUnits[2]
     
     #The axes names as determined by the chosen units.
-    xAxisName=xUnits[0]
-    yAxisName=yUnits[0]
-    plotAxes.set_xlabel(xAxisName)
-    plotAxes.set_ylabel(yAxisName)
+    xAxisName,xAxisUnit=xUnits[0:2]
+    yAxisName,yAxisUnit=yUnits[0:2]
+    plotAxes.set_xlabel(xAxisName+" ("+xAxisUnit+")")
+    plotAxes.set_ylabel(yAxisName+" ("+yAxisUnit+")")
     
-    plotAxes.ticklabel_format(style="sci",scilimits=(0,0))
+    plotAxes.ticklabel_format(style="sci",scilimits=(0,0),useMathText=True)
     
 
     for currentCurveToPlot in curvesToPlot:
@@ -410,76 +413,6 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
     
     return plotFigure
 
-#Creates the figure with plot controls and the functions that run when the controls are used.
-def createControls(plotFigure,controlVariables):
-    plotAxes=plotFigure.gca()
-    currentLines=plotAxes.get_lines()
-
-    #The functions that run when the controls are used as created below.
-    def createNewCombinedLegend(): #Creates a non split legend.
-        newCombinedLegend=plotAxes.legend(ncol=controlVariables[0],loc="best")
-        newCombinedLegend.set_draggable(True)
-                    
-    def legendSplitToggle(event):
-        plt.sca(plotAxes)  
-        controlVariables[1]=not controlVariables[1]
-        
-        if(controlVariables[1]):
-            (plotAxes.get_legend()).remove() #The current legend is removed.
-            currentLegendXShift=0.0 #Used to prevent all the new legends from being on top of each other.
-                        
-            for currentLine in currentLines:
-                newSplitLegend=plotAxes.legend(handles=[currentLine],loc=(0.25+currentLegendXShift,0.5))
-                newSplitLegend.set_draggable(True)
-                newSplitLegend.remove() #Done to prevent the legend being added twice to the figure.
-                plotAxes.add_artist(a=newSplitLegend)
-                currentLegendXShift+=0.05 #The next legend is shifted.
-                            
-        else: #The split legends are found and then removed.
-            splitLegends=plotAxes.findobj(match=matplotlib.legend.Legend)
-            for currentSplitLegend in splitLegends:
-                currentSplitLegend.remove()
-                createNewCombinedLegend()
-                    
-        plt.draw()
-                
-                        
-    def increaseLegendColumnNumber(event):
-        plt.sca(plotAxes)
-                
-        if(controlVariables[1]==False):
-            (plotAxes.get_legend()).remove() #The current legend is removed.
-            controlVariables[0]=min(len(currentLines),controlVariables[0]+1)
-            createNewCombinedLegend()
-            plt.draw()
-                    
-                
-    def decreaseLegendColumnNumber(event):
-        plt.sca(plotAxes)
-                
-        if(controlVariables[1]==False):
-            (plotAxes.get_legend()).remove() #The current legend is removed.
-            controlVariables[0]=max(1,controlVariables[0]-1)
-            createNewCombinedLegend()
-            plt.draw()
-                    
-                            
-    #The controls are created below.        
-    controlFigure=plt.figure(figsize=(4,2))
-    button1Axes=controlFigure.add_axes([0.3,0.5,0.4,0.15])
-    button2Axes=controlFigure.add_axes([0.05,0.3,0.4,0.15])
-    button3Axes=controlFigure.add_axes([0.55,0.3,0.4,0.15])
-            
-    button1=matplotlib.widgets.Button(ax=button1Axes,label="Toggle split legend")
-    button2=matplotlib.widgets.Button(ax=button2Axes,label="Less legend columns")
-    button3=matplotlib.widgets.Button(ax=button3Axes,label="More legend columns")
-                        
-    button1.on_clicked(legendSplitToggle)
-    button2.on_clicked(decreaseLegendColumnNumber)
-    button3.on_clicked(increaseLegendColumnNumber)
-    return button1,button2,button3 #Returned so the button objects exist outside the scope of this function.
-
-
 
 
 def main():
@@ -497,8 +430,8 @@ def main():
             xUnits,yUnits=getPlotUnits(unitDictionary)
             
             plotFigure=plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits)
-            controlVariables=[1,False] #Holds the number of columns in a non plit legend and whether the legend has been split.
-            b1,b2,b3=createControls(plotFigure,controlVariables)
+            controlVariables=[1,False,True,True,True,True] #Holds the number of columns in a non split legend, whether the legend has been split, whether the X and Y axes are using scientific notation and whether the x and y axes labels are hidden.
+            b1,b2,b3,b4,b5,b6,b7=createControls(plotFigure,controlVariables,xUnits,yUnits)
   
             plt.show(block=True)
             
