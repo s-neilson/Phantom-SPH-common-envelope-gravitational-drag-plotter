@@ -389,6 +389,7 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
     plotAxes.set_ylabel(yAxisName+" ("+yAxisUnit+")")
     
     plotAxes.ticklabel_format(style="sci",scilimits=(0,0),useMathText=True)
+    plotAxes.grid(visible=False)
     
 
     for currentCurveToPlot in curvesToPlot:
@@ -430,8 +431,8 @@ def main():
             xUnits,yUnits=getPlotUnits(unitDictionary)
             
             plotFigure=plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits)
-            controlVariables=[1,False,True,True,True,True] #Holds the number of columns in a non split legend, whether the legend has been split, whether the X and Y axes are using scientific notation and whether the x and y axes labels are hidden.
-            b1,b2,b3,b4,b5,b6,b7=createControls(plotFigure,controlVariables,xUnits,yUnits)
+            controlVariables={"fontSize":matplotlib.rcParams["font.size"],"legendColumnCount":1,"legendVisible":True,"legendSplit":False,"xAxisUseScientificNotation":True,"yAxisUseScientificNotation":True,"xAxisTextVisible":True,"yAxisTextVisible":True,"gridVisible":False}
+            createdButtons=createControls(plotFigure,controlVariables,xUnits,yUnits)
   
             plt.show(block=True)
             
