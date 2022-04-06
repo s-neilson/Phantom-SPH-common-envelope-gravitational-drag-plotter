@@ -69,7 +69,7 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
             plotAxes.set_xlabel(xAxisName+" ("+exponentText.get_text()+" "+xAxisUnit+")") #The exponent multiplier is placed in the axis label.
             plt.setp(exponentText,visible=False) #The original exponent multipler is hidden.
         else:
-            plotAxes.set_xlabel(xUnits[0])
+            plotAxes.set_xlabel(xAxisName+" ("+xAxisUnit+")")
 
         plotFigure.canvas.draw()
 
@@ -84,7 +84,7 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
             plotAxes.set_ylabel(yAxisName+" ("+exponentText.get_text()+" "+yAxisUnit+")") #The exponent multiplier is placed in the axis label.
             plt.setp(exponentText,visible=False) #The original exponent multipler is hidden.
         else:
-            plotAxes.set_ylabel(yUnits[0])
+            plotAxes.set_ylabel(yAxisName+" ("+yAxisUnit+")")
 
         plotFigure.canvas.draw()
 
