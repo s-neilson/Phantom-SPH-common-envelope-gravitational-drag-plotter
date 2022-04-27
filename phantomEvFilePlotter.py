@@ -68,7 +68,6 @@ def openFiles():
         filePath=input()
         
         if(filePath=="f"):
-            print(fileNames)
             return fileNames,openedFiles #The user has finished selecting the files to be opened.
 
         beFilePaths=list(braceexpand(filePath))
