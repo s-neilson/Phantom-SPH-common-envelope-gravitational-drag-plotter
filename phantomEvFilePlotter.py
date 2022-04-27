@@ -1,4 +1,6 @@
 from collections import OrderedDict
+import glob
+from braceexpand import braceexpand
 import csv
 import regex
 import matplotlib
@@ -62,14 +64,18 @@ def openFiles():
     fileNames=[]
     
     while(True):
-        print("Type the path of a file to open. Enter f if finished selecting files.")
+        print("Type the path of a file to open. You can use globbing and brace expansion. Use forward path slashes. Enter f if finished selecting files.")
         filePath=input()
         
         if(filePath=="f"):
+            print(fileNames)
             return fileNames,openedFiles #The user has finished selecting the files to be opened.
-    
-        fileNames.append(filePath)
-        openedFiles.append(open(file=filePath,mode="r"))
+
+        beFilePaths=list(braceexpand(filePath))
+        for currentBeFilePath in beFilePaths: #Loops over brace expanded file paths.
+            for currentGlobFilePath in glob.glob(currentBeFilePath): #Loops over the globbing matches for each brace expanded file path.
+                fileNames.append(currentGlobFilePath)
+                openedFiles.append(open(file=currentGlobFilePath,mode="r"))
 
 
 #Associates column names, column data and the file they came from with a key that allows the selection of columns to plot in getColumnPairsToPlot.
