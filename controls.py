@@ -103,9 +103,10 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
         plotFigure.canvas.draw()
 
 
-    def toggleGridVisibility(event):
-        controlVariables["gridVisible"]=not controlVariables["gridVisible"]
-        plotAxes.grid(visible=controlVariables["gridVisible"],which="major",axis="both")
+    def toggleRasterization(event):
+        controlVariables["rasterization"]=not controlVariables["rasterization"]
+        button8.label.set_text("Disable curve rasterization" if(controlVariables["rasterization"]) else "Enable curve rasterization")
+        plotAxes.set_rasterization_zorder(0.0 if(controlVariables["rasterization"]) else None)
         plotFigure.canvas.draw()
 
 
@@ -141,7 +142,7 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
     button5Axes=controlFigure.add_axes([0.55,0.38,0.4,0.1])
     button6Axes=controlFigure.add_axes([0.05,0.26,0.4,0.1])
     button7Axes=controlFigure.add_axes([0.55,0.26,0.4,0.1])
-    button8Axes=controlFigure.add_axes([0.3,0.14,0.4,0.1])
+    button8Axes=controlFigure.add_axes([0.2,0.14,0.6,0.1])
     button9Axes=controlFigure.add_axes([0.05,0.02,0.4,0.1])
     button10Axes=controlFigure.add_axes([0.55,0.02,0.4,0.1])
     
@@ -153,7 +154,7 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
     button5=matplotlib.widgets.Button(ax=button5Axes,label="Toggle y axis\n scientific notation") 
     button6=matplotlib.widgets.Button(ax=button6Axes,label="Toggle x axis\n text visibility")
     button7=matplotlib.widgets.Button(ax=button7Axes,label="Toggle y axis\n text visibility") 
-    button8=matplotlib.widgets.Button(ax=button8Axes,label="Toggle grid visibility")
+    button8=matplotlib.widgets.Button(ax=button8Axes,label="Enable curve rasterization")
     button9=matplotlib.widgets.Button(ax=button9Axes,label="Decrease font size")
     button10=matplotlib.widgets.Button(ax=button10Axes,label="Increase font size")
                         
@@ -164,7 +165,7 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
     button5.on_clicked(toggleYAxisScientificNotation)
     button6.on_clicked(toggleXAxisText)
     button7.on_clicked(toggleYAxisText)
-    button8.on_clicked(toggleGridVisibility)
+    button8.on_clicked(toggleRasterization)
     button9.on_clicked(decreaseFontSize)
     button10.on_clicked(increaseFontSize)
     return button1,button2,button3,button4,button5,button6,button7,button8,button9,button10 #Returned so the button objects exist outside the scope of this function.

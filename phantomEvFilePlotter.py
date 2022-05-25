@@ -397,7 +397,7 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
     plotAxes.grid(visible=False)
     
 
-    for currentCurveToPlot in curvesToPlot:
+    for currentOrder,currentCurveToPlot in enumerate(curvesToPlot):
         currentXColumnKey=currentCurveToPlot[0]
         currentYColumnKey=currentCurveToPlot[1]
         currentLegendName=currentCurveToPlot[2]
@@ -410,7 +410,7 @@ def plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits):
         xDataScaled=[i*xScaleFactor for i in xData]
         yDataScaled=[i*yScaleFactor for i in yData]
             
-        plotAxes.plot(xDataScaled,yDataScaled,label=currentLegendName)
+        plotAxes.plot(xDataScaled,yDataScaled,label=currentLegendName,zorder=(-1)-currentOrder)
 
      
     legend=plotAxes.legend(loc="best")
@@ -436,7 +436,7 @@ def main():
             xUnits,yUnits=getPlotUnits(unitDictionary)
             
             plotFigure=plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits)
-            controlVariables={"fontSize":matplotlib.rcParams["font.size"],"legendColumnCount":1,"legendVisible":True,"legendSplit":False,"xAxisUseScientificNotation":True,"yAxisUseScientificNotation":True,"xAxisTextVisible":True,"yAxisTextVisible":True,"gridVisible":False}
+            controlVariables={"fontSize":matplotlib.rcParams["font.size"],"legendColumnCount":1,"legendVisible":True,"legendSplit":False,"xAxisUseScientificNotation":True,"yAxisUseScientificNotation":True,"xAxisTextVisible":True,"yAxisTextVisible":True,"rasterization":False}
             createdButtons=createControls(plotFigure,controlVariables,xUnits,yUnits)
   
             plt.show(block=True)
