@@ -1,5 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
+from numpy import array_split
 
 
 #Creates the figure with plot controls and the functions that run when the controls are used.
@@ -19,26 +20,31 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
     def createNewCombinedLegend(): #Creates a non split legend.
         newCombinedLegend=plotAxes.legend(ncol=controlVariables["legendColumnCount"],loc="best")
         newCombinedLegend.set_draggable(True)
+
+    def removeAllLegends(): #Removes all legends from plotAxes.
+        splitLegends=plotAxes.findobj(match=matplotlib.legend.Legend)
+        for currentSplitLegend in splitLegends:
+            currentSplitLegend.remove()
                     
     def legendSplitToggle(event):
         controlVariables["legendSplit"]=not controlVariables["legendSplit"]
+        removeAllLegends()
         
-        if(controlVariables["legendSplit"]):
-            (plotAxes.get_legend()).remove() #The current legend is removed.
+        if(controlVariables["legendSplit"]): #New draggable legends are made for each column of the unsplit legend.
             currentLegendXShift=0.0 #Used to prevent all the new legends from being on top of each other.
-                        
-            for currentLine in currentLines:
-                newSplitLegend=plotAxes.legend(handles=[currentLine],loc=(0.25+currentLegendXShift,0.5))
+         
+            #This uses the same method that matplotlib uses (using numpy.array_split) to arrange legends into a specific
+            #number of columns. This is done because the columns of a matplotlib legend are not directly accessible.
+            columnLines=[list(i) for i in list(array_split(currentLines,controlVariables["legendColumnCount"]))]
+
+            for currentColumn in columnLines: #Loops over the collection of lines for each column.
+                newSplitLegend=plotAxes.legend(handles=currentColumn,loc=(0.25+currentLegendXShift,0.5))
                 newSplitLegend.set_draggable(True)
                 newSplitLegend.remove() #Done to prevent the legend being added twice to the figure.
                 plotAxes.add_artist(a=newSplitLegend)
-                currentLegendXShift+=0.05 #The next legend is shifted.
-                            
-        else: #The split legends are found and then removed.
-            splitLegends=plotAxes.findobj(match=matplotlib.legend.Legend)
-            for currentSplitLegend in splitLegends:
-                currentSplitLegend.remove()
-                createNewCombinedLegend()
+                currentLegendXShift+=0.05 #The next legend is shifted.                            
+        else:
+            createNewCombinedLegend()
                     
         plotFigure.canvas.draw()
                 
