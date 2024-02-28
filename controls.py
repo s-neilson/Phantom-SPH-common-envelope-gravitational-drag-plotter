@@ -116,8 +116,9 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
         plotFigure.canvas.draw()
 
 
-    def updateFontSize(newFontSize): #Changes the font size of the tick labels, axis labels and legend/s.
+    def updateFontSize(newFontSize): #Changes the font size of the tick labels, axis labels, title and legend/s.        
         plotAxes.tick_params(axis="both",labelsize=newFontSize)
+        plotAxes.title.set_fontsize(newFontSize)
         plt.setp(plotAxes.get_xaxis().get_label(),fontsize=newFontSize)
         plt.setp(plotAxes.get_yaxis().get_label(),fontsize=newFontSize)
         allLegends=plotAxes.findobj(match=matplotlib.legend.Legend)
