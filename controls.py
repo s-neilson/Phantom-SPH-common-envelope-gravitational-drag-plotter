@@ -114,9 +114,13 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
         button8.label.set_text("Disable curve rasterization" if(controlVariables["rasterization"]) else "Enable curve rasterization")
         plotAxes.set_rasterization_zorder(0.0 if(controlVariables["rasterization"]) else None)
         plotFigure.canvas.draw()
+        controlFigure.canvas.draw()
 
 
-    def updateFontSize(newFontSize): #Changes the font size of the tick labels, axis labels, title and legend/s.        
+    def updateFontSize(newFontSize): #Changes the font size of the tick labels, axis labels, title and legend/s.
+        label1.set_text(str(newFontSize)) #Updates the text label that shows the current font size.
+        controlFigure.canvas.draw()
+        
         plotAxes.tick_params(axis="both",labelsize=newFontSize)
         plotAxes.title.set_fontsize(newFontSize)
         plt.setp(plotAxes.get_xaxis().get_label(),fontsize=newFontSize)
@@ -164,6 +168,7 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
     button8=matplotlib.widgets.Button(ax=button8Axes,label="Enable curve rasterization")
     button9=matplotlib.widgets.Button(ax=button9Axes,label="Decrease font size")
     button10=matplotlib.widgets.Button(ax=button10Axes,label="Increase font size")
+    label1=matplotlib.pyplot.text(x=-0.22,y=0.3,s=str(controlVariables["fontSize"]))
                         
     button1.on_clicked(legendSplitToggle)
     button2.on_clicked(decreaseLegendColumnNumber)
@@ -175,4 +180,4 @@ def createControls(plotFigure,controlVariables,xUnits,yUnits):
     button8.on_clicked(toggleRasterization)
     button9.on_clicked(decreaseFontSize)
     button10.on_clicked(increaseFontSize)
-    return button1,button2,button3,button4,button5,button6,button7,button8,button9,button10 #Returned so the button objects exist outside the scope of this function.
+    return button1,button2,button3,button4,button5,button6,button7,button8,button9,button10,label1 #Returned so the objects that make up the controls exist outside the scope of this function.

@@ -437,7 +437,7 @@ def main():
             
             plotFigure=plotColumnPairs(columnData,curvesToPlot,xUnits,yUnits)
             controlVariables={"fontSize":matplotlib.rcParams["font.size"],"legendColumnCount":1,"legendVisible":True,"legendSplit":False,"xAxisUseScientificNotation":True,"yAxisUseScientificNotation":True,"xAxisTextVisible":True,"yAxisTextVisible":True,"rasterization":False}
-            createdButtons=createControls(plotFigure,controlVariables,xUnits,yUnits)
+            createdControlObjects=createControls(plotFigure,controlVariables,xUnits,yUnits)
   
             plt.show(block=True)
             
@@ -448,5 +448,3 @@ def main():
 
 if(__name__=="__main__"):
     main()
-
-    
